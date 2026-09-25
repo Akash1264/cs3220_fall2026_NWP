@@ -1,0 +1,444 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1000px;
+                 background-color: #242020;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 1000px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#f67088", "font": {"color": "white"}, "id": "Stark", "label": "Stark", "shape": "dot", "size": 15}, {"color": "#f67088", "font": {"color": "white"}, "id": "Arya Stark", "label": "Arya Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Benjen Stark", "label": "Benjen Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Bran Stark", "label": "Bran Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Catelyn Stark", "label": "Catelyn Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Eddard Stark", "label": "Eddard Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Ghost", "label": "Ghost", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Grey Wind", "label": "Grey Wind", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Jon Snow", "label": "Jon Snow", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Lady", "label": "Lady", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Nymeria", "label": "Nymeria", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Rickon Stark", "label": "Rickon Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Robb Stark", "label": "Robb Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Sansa Stark", "label": "Sansa Stark", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Shaggydog", "label": "Shaggydog", "shape": "dot", "size": 10}, {"color": "#f67088", "font": {"color": "white"}, "id": "Summer", "label": "Summer", "shape": "dot", "size": 10}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Targaryen", "label": "Targaryen", "shape": "dot", "size": 5}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Daenerys Targaryen", "label": "Daenerys Targaryen", "shape": "dot", "size": 10}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Drogon", "label": "Drogon", "shape": "dot", "size": 10}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Rhaegal", "label": "Rhaegal", "shape": "dot", "size": 10}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Viserion", "label": "Viserion", "shape": "dot", "size": 10}, {"color": "#eb7f31", "font": {"color": "white"}, "id": "Viserys Targaryen", "label": "Viserys Targaryen", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Baratheon", "label": "Baratheon", "shape": "dot", "size": 9}, {"color": "#c09531", "font": {"color": "white"}, "id": "Joffrey Baratheon", "label": "Joffrey Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Myrcella Baratheon", "label": "Myrcella Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Renly Baratheon", "label": "Renly Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Robert Baratheon", "label": "Robert Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Selyse Baratheon", "label": "Selyse Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Shireen Baratheon", "label": "Shireen Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Stannis Baratheon", "label": "Stannis Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Tommen Baratheon", "label": "Tommen Baratheon", "shape": "dot", "size": 10}, {"color": "#c09531", "font": {"color": "white"}, "id": "Gendry", "label": "Gendry", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Lannister", "label": "Lannister", "shape": "dot", "size": 6}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Cersei Lannister", "label": "Cersei Lannister", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Jaime Lannister", "label": "Jaime Lannister", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Kevan Lannister", "label": "Kevan Lannister", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Lancel Lannister", "label": "Lancel Lannister", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Tyrion Lannister", "label": "Tyrion Lannister", "shape": "dot", "size": 10}, {"color": "#a0a131", "font": {"color": "white"}, "id": "Tywin Lannister", "label": "Tywin Lannister", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Night\u0027s Watch", "label": "Night\u0027s Watch", "shape": "dot", "size": 13}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Alliser Thorne", "label": "Alliser Thorne", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Eddison Tollett", "label": "Eddison Tollett", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Grenn", "label": "Grenn", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Jeor Mormont", "label": "Jeor Mormont", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Karl Tanner", "label": "Karl Tanner", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Maester Aemon", "label": "Maester Aemon", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Olly", "label": "Olly", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Othell Yarwyck", "label": "Othell Yarwyck", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Pypar", "label": "Pypar", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Qhorin Halfhand", "label": "Qhorin Halfhand", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Rast", "label": "Rast", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Samwell Tarly", "label": "Samwell Tarly", "shape": "dot", "size": 10}, {"color": "#70ac31", "font": {"color": "white"}, "id": "Yoren", "label": "Yoren", "shape": "dot", "size": 10}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Dothraki", "label": "Dothraki", "shape": "dot", "size": 5}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Doreah", "label": "Doreah", "shape": "dot", "size": 10}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Irri", "label": "Irri", "shape": "dot", "size": 10}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Khal Drogo", "label": "Khal Drogo", "shape": "dot", "size": 10}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Rakharo", "label": "Rakharo", "shape": "dot", "size": 10}, {"color": "#32b06e", "font": {"color": "white"}, "id": "Qhono", "label": "Qhono", "shape": "dot", "size": 10}, {"color": "#34ad97", "font": {"color": "white"}, "id": "Greyjoy", "label": "Greyjoy", "shape": "dot", "size": 4}, {"color": "#34ad97", "font": {"color": "white"}, "id": "Balon Greyjoy", "label": "Balon Greyjoy", "shape": "dot", "size": 10}, {"color": "#34ad97", "font": {"color": "white"}, "id": "Euron Greyjoy", "label": "Euron Greyjoy", "shape": "dot", "size": 10}, {"color": "#34ad97", "font": {"color": "white"}, "id": "Theon Greyjoy", "label": "Theon Greyjoy", "shape": "dot", "size": 10}, {"color": "#34ad97", "font": {"color": "white"}, "id": "Yara Greyjoy", "label": "Yara Greyjoy", "shape": "dot", "size": 10}, {"color": "#36abaf", "font": {"color": "white"}, "id": "Tyrell", "label": "Tyrell", "shape": "dot", "size": 4}, {"color": "#36abaf", "font": {"color": "white"}, "id": "Loras Tyrell", "label": "Loras Tyrell", "shape": "dot", "size": 10}, {"color": "#36abaf", "font": {"color": "white"}, "id": "Mace Tyrell", "label": "Mace Tyrell", "shape": "dot", "size": 10}, {"color": "#36abaf", "font": {"color": "white"}, "id": "Margaery Tyrell", "label": "Margaery Tyrell", "shape": "dot", "size": 10}, {"color": "#36abaf", "font": {"color": "white"}, "id": "Olenna Tyrell", "label": "Olenna Tyrell", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Wildlings", "label": "Wildlings", "shape": "dot", "size": 11}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Baby Sam", "label": "Baby Sam", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Craster", "label": "Craster", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Gilly", "label": "Gilly", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Mag the Mighty", "label": "Mag the Mighty", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Mance Rayder", "label": "Mance Rayder", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Osha", "label": "Osha", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Rattleshirt", "label": "Rattleshirt", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Thenn Warg", "label": "Thenn Warg", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Tormund Giantsbane", "label": "Tormund Giantsbane", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Wun Wun", "label": "Wun Wun", "shape": "dot", "size": 10}, {"color": "#38a8cb", "font": {"color": "white"}, "id": "Ygritte", "label": "Ygritte", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Martell", "label": "Martell", "shape": "dot", "size": 7}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Doran Martell", "label": "Doran Martell", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Ellaria Sand", "label": "Ellaria Sand", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Nymeria Sand", "label": "Nymeria Sand", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Obara Sand", "label": "Obara Sand", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Oberyn Martell", "label": "Oberyn Martell", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Trystane Martell", "label": "Trystane Martell", "shape": "dot", "size": 10}, {"color": "#629cf4", "font": {"color": "white"}, "id": "Tyene Sand", "label": "Tyene Sand", "shape": "dot", "size": 10}, {"color": "#b385f4", "font": {"color": "white"}, "id": "Frey", "label": "Frey", "shape": "dot", "size": 3}, {"color": "#b385f4", "font": {"color": "white"}, "id": "Black Walder Rivers", "label": "Black Walder Rivers", "shape": "dot", "size": 10}, {"color": "#b385f4", "font": {"color": "white"}, "id": "Lothar Frey", "label": "Lothar Frey", "shape": "dot", "size": 10}, {"color": "#b385f4", "font": {"color": "white"}, "id": "Walder Frey", "label": "Walder Frey", "shape": "dot", "size": 10}, {"color": "#f35bf4", "font": {"color": "white"}, "id": "Tully", "label": "Tully", "shape": "dot", "size": 2}, {"color": "#f35bf4", "font": {"color": "white"}, "id": "Brynden Tully", "label": "Brynden Tully", "shape": "dot", "size": 10}, {"color": "#f35bf4", "font": {"color": "white"}, "id": "Edmure Tully", "label": "Edmure Tully", "shape": "dot", "size": 10}, {"color": "#f568bd", "font": {"color": "white"}, "id": "White Walkers", "label": "White Walkers", "shape": "dot", "size": 5}, {"color": "#f568bd", "font": {"color": "white"}, "id": "Mag the Mighty Wight", "label": "Mag the Mighty Wight", "shape": "dot", "size": 10}, {"color": "#f568bd", "font": {"color": "white"}, "id": "The Night King", "label": "The Night King", "shape": "dot", "size": 10}, {"color": "#f568bd", "font": {"color": "white"}, "id": "White Walker", "label": "White Walker", "shape": "dot", "size": 10}, {"color": "#f568bd", "font": {"color": "white"}, "id": "Wight Wildling Girl", "label": "Wight Wildling Girl", "shape": "dot", "size": 10}, {"color": "#f568bd", "font": {"color": "white"}, "id": "Wun Wun Wight", "label": "Wun Wun Wight", "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([{"from": "Stark", "to": "Arya Stark", "width": 1}, {"from": "Stark", "to": "Benjen Stark", "width": 1}, {"from": "Stark", "to": "Bran Stark", "width": 1}, {"from": "Stark", "to": "Catelyn Stark", "width": 1}, {"from": "Stark", "to": "Eddard Stark", "width": 1}, {"from": "Stark", "to": "Ghost", "width": 1}, {"from": "Stark", "to": "Grey Wind", "width": 1}, {"from": "Stark", "to": "Jon Snow", "width": 1}, {"from": "Stark", "to": "Lady", "width": 1}, {"from": "Stark", "to": "Nymeria", "width": 1}, {"from": "Stark", "to": "Rickon Stark", "width": 1}, {"from": "Stark", "to": "Robb Stark", "width": 1}, {"from": "Stark", "to": "Sansa Stark", "width": 1}, {"from": "Stark", "to": "Shaggydog", "width": 1}, {"from": "Stark", "to": "Summer", "width": 1}, {"from": "Targaryen", "to": "Daenerys Targaryen", "width": 1}, {"from": "Targaryen", "to": "Drogon", "width": 1}, {"from": "Targaryen", "to": "Rhaegal", "width": 1}, {"from": "Targaryen", "to": "Viserion", "width": 1}, {"from": "Targaryen", "to": "Viserys Targaryen", "width": 1}, {"from": "Baratheon", "to": "Joffrey Baratheon", "width": 1}, {"from": "Baratheon", "to": "Myrcella Baratheon", "width": 1}, {"from": "Baratheon", "to": "Renly Baratheon", "width": 1}, {"from": "Baratheon", "to": "Robert Baratheon", "width": 1}, {"from": "Baratheon", "to": "Selyse Baratheon", "width": 1}, {"from": "Baratheon", "to": "Shireen Baratheon", "width": 1}, {"from": "Baratheon", "to": "Stannis Baratheon", "width": 1}, {"from": "Baratheon", "to": "Tommen Baratheon", "width": 1}, {"from": "Baratheon", "to": "Gendry", "width": 1}, {"from": "Lannister", "to": "Cersei Lannister", "width": 1}, {"from": "Lannister", "to": "Jaime Lannister", "width": 1}, {"from": "Lannister", "to": "Kevan Lannister", "width": 1}, {"from": "Lannister", "to": "Lancel Lannister", "width": 1}, {"from": "Lannister", "to": "Tyrion Lannister", "width": 1}, {"from": "Lannister", "to": "Tywin Lannister", "width": 1}, {"from": "Night\u0027s Watch", "to": "Alliser Thorne", "width": 1}, {"from": "Night\u0027s Watch", "to": "Eddison Tollett", "width": 1}, {"from": "Night\u0027s Watch", "to": "Grenn", "width": 1}, {"from": "Night\u0027s Watch", "to": "Jeor Mormont", "width": 1}, {"from": "Night\u0027s Watch", "to": "Karl Tanner", "width": 1}, {"from": "Night\u0027s Watch", "to": "Maester Aemon", "width": 1}, {"from": "Night\u0027s Watch", "to": "Olly", "width": 1}, {"from": "Night\u0027s Watch", "to": "Othell Yarwyck", "width": 1}, {"from": "Night\u0027s Watch", "to": "Pypar", "width": 1}, {"from": "Night\u0027s Watch", "to": "Qhorin Halfhand", "width": 1}, {"from": "Night\u0027s Watch", "to": "Rast", "width": 1}, {"from": "Night\u0027s Watch", "to": "Samwell Tarly", "width": 1}, {"from": "Night\u0027s Watch", "to": "Yoren", "width": 1}, {"from": "Dothraki", "to": "Doreah", "width": 1}, {"from": "Dothraki", "to": "Irri", "width": 1}, {"from": "Dothraki", "to": "Khal Drogo", "width": 1}, {"from": "Dothraki", "to": "Rakharo", "width": 1}, {"from": "Dothraki", "to": "Qhono", "width": 1}, {"from": "Greyjoy", "to": "Balon Greyjoy", "width": 1}, {"from": "Greyjoy", "to": "Euron Greyjoy", "width": 1}, {"from": "Greyjoy", "to": "Theon Greyjoy", "width": 1}, {"from": "Greyjoy", "to": "Yara Greyjoy", "width": 1}, {"from": "Tyrell", "to": "Loras Tyrell", "width": 1}, {"from": "Tyrell", "to": "Mace Tyrell", "width": 1}, {"from": "Tyrell", "to": "Margaery Tyrell", "width": 1}, {"from": "Tyrell", "to": "Olenna Tyrell", "width": 1}, {"from": "Wildlings", "to": "Baby Sam", "width": 1}, {"from": "Wildlings", "to": "Craster", "width": 1}, {"from": "Wildlings", "to": "Gilly", "width": 1}, {"from": "Wildlings", "to": "Mag the Mighty", "width": 1}, {"from": "Wildlings", "to": "Mance Rayder", "width": 1}, {"from": "Wildlings", "to": "Osha", "width": 1}, {"from": "Wildlings", "to": "Rattleshirt", "width": 1}, {"from": "Wildlings", "to": "Thenn Warg", "width": 1}, {"from": "Wildlings", "to": "Tormund Giantsbane", "width": 1}, {"from": "Wildlings", "to": "Wun Wun", "width": 1}, {"from": "Wildlings", "to": "Ygritte", "width": 1}, {"from": "Martell", "to": "Doran Martell", "width": 1}, {"from": "Martell", "to": "Ellaria Sand", "width": 1}, {"from": "Martell", "to": "Nymeria Sand", "width": 1}, {"from": "Martell", "to": "Obara Sand", "width": 1}, {"from": "Martell", "to": "Oberyn Martell", "width": 1}, {"from": "Martell", "to": "Trystane Martell", "width": 1}, {"from": "Martell", "to": "Tyene Sand", "width": 1}, {"from": "Frey", "to": "Black Walder Rivers", "width": 1}, {"from": "Frey", "to": "Lothar Frey", "width": 1}, {"from": "Frey", "to": "Walder Frey", "width": 1}, {"from": "Tully", "to": "Brynden Tully", "width": 1}, {"from": "Tully", "to": "Edmure Tully", "width": 1}, {"from": "White Walkers", "to": "Mag the Mighty Wight", "width": 1}, {"from": "White Walkers", "to": "The Night King", "width": 1}, {"from": "White Walkers", "to": "White Walker", "width": 1}, {"from": "White Walkers", "to": "Wight Wildling Girl", "width": 1}, {"from": "White Walkers", "to": "Wun Wun Wight", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
