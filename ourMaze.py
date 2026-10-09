@@ -1,0 +1,30 @@
+ourMaze = dict(
+  S = dict(N = 1, M = 1),
+  M = dict(I = 1),
+  I = dict(E1 = 1, J1 = 1),
+  E1 = dict(A = 1, X = 1),
+  A = dict(B = 1),
+  B = dict(C = 1, G = 1),
+  C = dict(D = 1, E2 = 1),
+  D = dict(F = 1, H = 1),
+  G = dict(E2 = 1, J1 = 1),
+  E2 = dict(J2 = 1),
+  J1 = dict(J2 = 1, Q = 1),
+  J2 = dict(L1 = 1, R = 1),
+  L1 = dict(L2 = 1),
+  H = dict(L2 = 1),
+  L2 = dict(K = 1),
+  K = dict(P = 1),
+  Q = dict(R = 1, N = 1),
+  R = dict(O = 1),
+  N = dict(O = 1),
+  O = dict(P = 1),
+)
+
+mazeLocations = dict(
+  A = (0, 0),  B = (1, 0),    C = (2, 0),  D = (3, 0),    F = (4, 0),
+  E1 = (0, 1), X = (0.5, 1),  G = (1, 1),  E2 = (2, 1),   H = (3, 1),
+  I = (0, 2),  J1 = (1, 2),   J2 = (2, 2), L1 = (2.5, 2), L2 = (3, 2),
+  M = (0, 3),  Q = (1, 3),    R = (2, 3),  K = (3, 3),
+  S = (0, 4),  N = (1, 4),    O = (2, 4),  P = (3, 4),
+)
