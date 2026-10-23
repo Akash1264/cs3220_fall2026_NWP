@@ -1,0 +1,7 @@
+streamlit
+pyvis
+networkx
+# ADDED: also needed by the notebook / src code
+numpy
+matplotlib
+seaborn
